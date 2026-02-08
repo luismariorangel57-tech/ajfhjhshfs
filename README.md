@@ -1,37 +1,89 @@
-# JupyterLite Demo
+# Trabajo #1: Análisis de Face Tracking y Visión por Computadora
 
-[![lite-badge](https://jupyterlite.rtfd.io/en/latest/_static/badge.svg)](https://jupyterlite.github.io/demo)
+## 1. Conceptos Fundamentales
 
-JupyterLite deployed as a static site to GitHub Pages, for demo purposes.
+### ¿Qué es MindAR?
+Es una biblioteca de software de código abierto y ligera diseñada para desarrollar experiencias de **Realidad Aumentada (AR)** en la web. Permite el seguimiento facial y de imágenes directamente en el navegador usando WebGL y WebAssembly.
 
-## ✨ Try it in your browser ✨
+### ¿Qué es OpenCV?
+**OpenCV** (Open Source Computer Vision Library) es la biblioteca de visión artificial más usada a nivel mundial. Contiene más de 2500 algoritmos optimizados para detección de rostros, objetos y procesamiento de imágenes.
 
-➡️ **https://jupyterlite.github.io/demo**
+### ¿MindAR usa OpenCV?
+**No.** MindAR está construida sobre **TensorFlow.js** y usa modelos de Deep Learning propios. OpenCV se basa en algoritmos clásicos de procesamiento de píxeles, mientras que MindAR usa inferencia de redes neuronales.
 
-![github-pages](https://user-images.githubusercontent.com/591645/120649478-18258400-c47d-11eb-80e5-185e52ff2702.gif)
+---
 
-## Requirements
+## 2. Análisis del Algoritmo Canny Edge Detection
 
-JupyterLite is being tested against modern web browsers:
+El algoritmo de Canny es el estándar óptimo para detectar bordes debido a su precisión y bajo error.
 
-- Firefox 90+
-- Chromium 89+
+### Uso de Matemáticas y Diferencias Finitas
+En una imagen (que es una matriz discreta), no podemos calcular derivadas analíticas. Por ello, el algoritmo usa **Diferencias Finitas** para aproximar el gradiente de intensidad:
 
-## Deploy your JupyterLite website on GitHub Pages
+$$f'(x) \approx f(x+1) - f(x-1)$$
 
-Check out the guide on the JupyterLite documentation: https://jupyterlite.readthedocs.io/en/latest/quickstart/deploy.html
+[Image of Canny edge detection steps: Noise reduction, Gradient calculation, Non-maximum suppression, Hysteresis thresholding]
 
-## Further Information and Updates
+---
 
-For more info, keep an eye on the JupyterLite documentation:
+## 3. Algoritmo de Sobel
 
-- How-to Guides: https://jupyterlite.readthedocs.io/en/latest/howto/index.html
-- Reference: https://jupyterlite.readthedocs.io/en/latest/reference/index.html
+El operador Sobel calcula una aproximación del gradiente de intensidad. Utiliza máscaras de $3 \times 3$ para obtener los gradientes vertical ($G_y$) y horizontal ($G_x$).
 
-This template provides the Pyodide kernel (`jupyterlite-pyodide-kernel`), the JavaScript kernel (`jupyterlite-javascript-kernel`), and the p5 kernel (`jupyterlite-p5-kernel`), along with other
-optional utilities and extensions to make the JupyterLite experience more enjoyable. See the
-[`requirements.txt` file](requirements.txt) for a list of all the dependencies provided.
+### Magnitud del Gradiente
+La magnitud total del borde se calcula mediante la fórmula de la hipotenusa:
 
-For a template based on the Xeus kernel, see the [`jupyterlite/xeus-python-demo` repository](https://github.com/jupyterlite/xeus-python-demo)
+$$G = \sqrt{G_x^2 + G_y^2}$$
 
+[Image of Sobel operator kernels for horizontal and vertical edge detection]
 
+---
+
+## 4. Implementaciones Técnicas (Código Fuente)
+
+### A. Detección de Bordes con OpenCV.js (Punto 23)
+Este código utiliza la webcam para aplicar el filtro Sobel en tiempo real.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detección de Bordes Sobel en Vivo</title>
+    <script async src="[https://docs.opencv.org/4.8.0/opencv.js](https://docs.opencv.org/4.8.0/opencv.js)" onload="main()"></script>
+    <style>body { background: #111; color: white; text-align: center; }</style>
+</head>
+<body>
+    <h3>Filtro Sobel en Tiempo Real (OpenCV.js)</h3>
+    <video id="videoInput" width="320" height="240" style="display:none"></video>
+    <canvas id="canvasOutput" width="320" height="240"></canvas>
+
+    <script>
+        function main() {
+            const video = document.getElementById("videoInput");
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+                video.onloadedmetadata = () => { setTimeout(processVideo, 100); };
+            });
+
+            function processVideo() {
+                const src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+                const dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+                const cap = new cv.VideoCapture(video);
+                function loop() {
+                    try {
+                        if (video.paused || video.ended) return;
+                        cap.read(src);
+                        cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
+                        cv.Sobel(src, dst, cv.CV_8U, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                        cv.imshow("canvasOutput", dst);
+                        requestAnimationFrame(loop);
+                    } catch (err) { console.error(err); }
+                }
+                loop();
+            }
+        }
+    </script>
+</body>
+</html>
