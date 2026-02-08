@@ -1,44 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js](https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js)"></script>
-    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js](https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js)"></script>
-    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js](https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js)"></script>
+    <meta charset="UTF-8">
+    <title>Face Tracking - MediaPipe Face Mesh</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+            font-family: sans-serif;
+        }
+        .container {
+            position: relative;
+        }
+        canvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <video class="input_video" style="display:none"></video>
-    <canvas class="output_canvas" width="640" height="480"></canvas>
+
+    <div class="container">
+        <video class="input_video" style="display:none"></video>
+        <canvas class="output_canvas" width="640" height="480"></canvas>
+        <div class="info">MediaPipe Face Mesh: 468 Landmarks</div>
+    </div>
 
     <script>
         const videoElement = document.getElementsByClassName('input_video')[0];
         const canvasElement = document.getElementsByClassName('output_canvas')[0];
         const canvasCtx = canvasElement.getContext('2d');
+
+        // Cargamos la imagen de la nariz (filtro)
         const accesorioImg = new Image();
-        accesorioImg.src = "[https://cdn-icons-png.flaticon.com/512/119/119596.png](https://cdn-icons-png.flaticon.com/512/119/119596.png)";
+        accesorioImg.src = "https://cdn-icons-png.flaticon.com/512/119/119596.png"; 
 
         function onResults(results) {
+            // Limpiar el canvas y dibujar el frame de la cámara
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
             if (results.multiFaceLandmarks) {
                 for (const landmarks of results.multiFaceLandmarks) {
-                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+                    // 1. Dibujar la malla facial (opcional, para ver los puntos)
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, 
+                                 {color: '#C0C0C070', lineWidth: 1});
+
+                    // 2. Localizar la punta de la nariz (Landmark índice 1)
                     const nariz = landmarks[1];
                     const x = nariz.x * canvasElement.width;
                     const y = nariz.y * canvasElement.height;
+
+                    // 3. Dibujar el accesorio sobre la nariz
+                    // Ajustamos el tamaño (40x40) y centramos la imagen (-20)
                     canvasCtx.drawImage(accesorioImg, x - 20, y - 20, 40, 40);
                 }
             }
             canvasCtx.restore();
         }
 
-        const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
-        faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5 });
+        // Configuración de la Red Neuronal de MediaPipe
+        const faceMesh = new FaceMesh({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+        }});
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true, // Activa puntos extra en ojos y labios
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
         faceMesh.onResults(onResults);
 
+        // Iniciar la cámara
         const camera = new Camera(videoElement, {
-            onFrame: async () => { await faceMesh.send({image: videoElement}); },
-            width: 640, height: 480
+            onFrame: async () => {
+                await faceMesh.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
         });
         camera.start();
     </script>
