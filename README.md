@@ -49,3 +49,13 @@ cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
 cv.Sobel(src, dst, cv.CV_8U, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
 
 cv.imshow('canvasOutput', dst);
+# 🎥 Demostración Interactiva
+
+Para ver el código funcionando en tiempo real con tu webcam, haz clic en los siguientes botones:
+
+[![Probar Face Tracking](https://img.shields.io/badge/EJECUTAR-FACE_TRACKING-blue?style=for-the-badge&logo=googlechrome&logoColor=white)](https://TU_USUARIO.github.io/NOMBRE_DE_TU_REPO/face_tracking.html)
+
+[![Probar Filtro Sobel](https://img.shields.io/badge/EJECUTAR-FILTRO_SOBEL-green?style=for-the-badge&logo=opencv&logoColor=white)](https://TU_USUARIO.github.io/NOMBRE_DE_TU_REPO/filtro_sobel.html)
+
+> **Nota:** Es necesario otorgar permisos de cámara al navegador para que las demostraciones funcionen.
+---
