@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Detección de Bordes Sobel - OpenCV.js</title>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        canvas {
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+        .status {
+            margin-top: 10px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Filtro Sobel en Tiempo Real</h2>
+    <video id="videoInput" width="640" height="480" style="display:none"></video>
+    <canvas id="canvasOutput" width="640" height="480"></canvas>
+    
+    <p id="status" class="status">Cargando OpenCV.js...</p>
+
+    <script type="text/javascript">
+        let video = document.getElementById('videoInput');
+        let status = document.getElementById('status');
+
+        function onOpenCvReady() {
+            status.innerHTML = 'OpenCV.js está listo. Iniciando cámara...';
+            startCamera();
+        }
+
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                    processVideo();
+                })
+                .catch(function(err) {
+                    status.innerHTML = "Error al acceder a la cámara: " + err;
+                });
+        }
+
+        function processVideo() {
+            try {
+                // Definimos las matrices de OpenCV
+                let src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+                let dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
+                let cap = new cv.VideoCapture(video);
+
+                const FPS = 30;
+                function process() {
+                    try {
+                        let begin = Date.now();
+                        // 1. Leer el frame actual de la cámara
+                        cap.read(src);
+                        // 2. Convertir a escala de grises (necesario para Sobel)
+                        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+                        // 3. Aplicar el algoritmo de Sobel
+                        // Parámetros: origen, destino, profundidad, dx, dy, ksize
+                        cv.Sobel(dst, dst, cv.CV_8U, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+                        // 4. Mostrar el resultado en el canvas
+                        cv.imshow('canvasOutput', dst);
+                        
+                        status.innerHTML = 'Procesando en tiempo real...';
+                        
+                        // Programar el siguiente frame
+                        let delay = 1000/FPS - (Date.now() - begin);
+                        setTimeout(process, delay);
+                    } catch (err) {
+                        console.error(err);
+                    }
+                }
+                setTimeout(process, 0);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
