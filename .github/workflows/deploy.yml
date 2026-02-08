@@ -13,10 +13,10 @@ jobs:
         uses: actions/checkout@v4 # Actualizado a v4
 
       - name: Compile LaTeX document
-        uses: xu-cheng/latex-action@v3 # Actualizado a v3 (más estable)
+        uses: xu-cheng/latex-action@v3
         with:
-          root_file: texto-1.tex # Asegúrate de que este sea el nombre de tu archivo .tex
-
+          # Debe ser el nombre exacto que aparece en tu carpeta
+          root_file: texto-1.tex
       - name: Upload PDF Artifact
         uses: actions/upload-artifact@v4 # SOLUCIÓN: Actualizado a v4
         with:
