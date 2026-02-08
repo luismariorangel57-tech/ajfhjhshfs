@@ -1,89 +1,51 @@
 # Trabajo #1: Análisis de Face Tracking y Visión por Computadora
 
-## 1. Conceptos Fundamentales
+## 1. Introducción a las Tecnologías de Visión Web
 
 ### ¿Qué es MindAR?
-Es una biblioteca de software de código abierto y ligera diseñada para desarrollar experiencias de **Realidad Aumentada (AR)** en la web. Permite el seguimiento facial y de imágenes directamente en el navegador usando WebGL y WebAssembly.
+MindAR es una biblioteca de software de código abierto y ligera diseñada para desarrollar experiencias de **Realidad Aumentada (AR)** en la web. Permite el reconocimiento de imágenes y seguimiento facial directamente en el navegador utilizando tecnologías estándar como **WebGL** y **WebAssembly**, eliminando la necesidad de instalar aplicaciones externas.
 
 ### ¿Qué es OpenCV?
-**OpenCV** (Open Source Computer Vision Library) es la biblioteca de visión artificial más usada a nivel mundial. Contiene más de 2500 algoritmos optimizados para detección de rostros, objetos y procesamiento de imágenes.
+**OpenCV** (Open Source Computer Vision Library) es la biblioteca de visión artificial más utilizada a nivel mundial. Provee una infraestructura común para aplicaciones de visión por computadora y contiene más de 2500 algoritmos optimizados para tareas como detección de rostros, identificación de objetos y procesamiento de imágenes.
 
 ### ¿MindAR usa OpenCV?
-**No.** MindAR está construida sobre **TensorFlow.js** y usa modelos de Deep Learning propios. OpenCV se basa en algoritmos clásicos de procesamiento de píxeles, mientras que MindAR usa inferencia de redes neuronales.
+**No.** Aunque ambas procesan imágenes, MindAR no depende de OpenCV. Está construida sobre **TensorFlow.js** y utiliza modelos de aprendizaje profundo (Deep Learning). Mientras OpenCV se basa en algoritmos clásicos de procesamiento de matrices de píxeles, MindAR se basa en inferencia de redes neuronales.
 
 ---
 
-## 2. Análisis del Algoritmo Canny Edge Detection
+## 2. Detección de Bordes y Modelos Matemáticos
 
-El algoritmo de Canny es el estándar óptimo para detectar bordes debido a su precisión y bajo error.
+### Algoritmo de Canny Edge Detection
+Es una técnica de procesamiento de imágenes utilizada para detectar bordes de manera robusta. Se considera el estándar óptimo porque cumple con baja tasa de error, localización precisa y respuesta única por cada borde.
 
-### Uso de Matemáticas y Diferencias Finitas
-En una imagen (que es una matriz discreta), no podemos calcular derivadas analíticas. Por ello, el algoritmo usa **Diferencias Finitas** para aproximar el gradiente de intensidad:
+#### Uso de Diferencias Finitas
+Dado que una imagen digital es una matriz discreta de píxeles, el algoritmo utiliza **Diferencias Finitas** para aproximar el gradiente (derivada) de la intensidad de la imagen:
 
 $$f'(x) \approx f(x+1) - f(x-1)$$
 
-[Image of Canny edge detection steps: Noise reduction, Gradient calculation, Non-maximum suppression, Hysteresis thresholding]
 
----
 
-## 3. Algoritmo de Sobel
-
-El operador Sobel calcula una aproximación del gradiente de intensidad. Utiliza máscaras de $3 \times 3$ para obtener los gradientes vertical ($G_y$) y horizontal ($G_x$).
-
-### Magnitud del Gradiente
-La magnitud total del borde se calcula mediante la fórmula de la hipotenusa:
+### Operador Sobel
+El algoritmo de Sobel calcula una aproximación del gradiente de intensidad. Utiliza máscaras (kernels) de $3 \times 3$ para estimar el gradiente en el eje horizontal ($G_x$) y vertical ($G_y$). La combinación de ambos permite obtener la magnitud total del borde:
 
 $$G = \sqrt{G_x^2 + G_y^2}$$
 
-[Image of Sobel operator kernels for horizontal and vertical edge detection]
+
 
 ---
 
-## 4. Implementaciones Técnicas (Código Fuente)
+## 3. Implementaciones Técnicas
 
-### A. Detección de Bordes con OpenCV.js (Punto 23)
-Este código utiliza la webcam para aplicar el filtro Sobel en tiempo real.
+### A. Detección de Bordes Sobel (OpenCV.js)
+Esta implementación realiza el procesamiento de video en tiempo real convirtiendo cada frame a escala de grises y aplicando el operador Sobel.
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Detección de Bordes Sobel en Vivo</title>
-    <script async src="[https://docs.opencv.org/4.8.0/opencv.js](https://docs.opencv.org/4.8.0/opencv.js)" onload="main()"></script>
-    <style>body { background: #111; color: white; text-align: center; }</style>
-</head>
-<body>
-    <h3>Filtro Sobel en Tiempo Real (OpenCV.js)</h3>
-    <video id="videoInput" width="320" height="240" style="display:none"></video>
-    <canvas id="canvasOutput" width="320" height="240"></canvas>
+> **Archivo:** `filtro_sobel.html`
 
-    <script>
-        function main() {
-            const video = document.getElementById("videoInput");
-            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-            .then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-                video.onloadedmetadata = () => { setTimeout(processVideo, 100); };
-            });
+```javascript
+// Paso fundamental: Conversión a Escala de Grises
+cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
 
-            function processVideo() {
-                const src = new cv.Mat(video.height, video.width, cv.CV_8UC4);
-                const dst = new cv.Mat(video.height, video.width, cv.CV_8UC1);
-                const cap = new cv.VideoCapture(video);
-                function loop() {
-                    try {
-                        if (video.paused || video.ended) return;
-                        cap.read(src);
-                        cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY);
-                        cv.Sobel(src, dst, cv.CV_8U, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
-                        cv.imshow("canvasOutput", dst);
-                        requestAnimationFrame(loop);
-                    } catch (err) { console.error(err); }
-                }
-                loop();
-            }
-        }
-    </script>
-</body>
-</html>
+// Aplicación del Algoritmo Sobel (dx=1, dy=0 para bordes verticales)
+cv.Sobel(src, dst, cv.CV_8U, 1, 0, 3, 1, 0, cv.BORDER_DEFAULT);
+
+cv.imshow('canvasOutput', dst);
