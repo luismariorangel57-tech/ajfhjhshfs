@@ -3,23 +3,22 @@ name: Build LaTeX Document
 on: 
   push:
     branches:
-      - deploy  # Asegúrate de que tu rama principal se llame main
+      - main
 
 jobs:
   build_latex:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # Actualizado a v4
 
       - name: Compile LaTeX document
-        uses: xu-cheng/latex-action@v2
+        uses: xu-cheng/latex-action@v3 # Actualizado a v3 (más estable)
         with:
-          # IMPORTANTE: Cambia 'main.tex' por el nombre real de tu archivo
-          root_file: texto-1.tex
+          root_file: texto-1.tex # Asegúrate de que este sea el nombre de tu archivo .tex
 
       - name: Upload PDF Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # SOLUCIÓN: Actualizado a v4
         with:
           name: PDF_Resultado
-          path: texto-1.pdf
+          path: main.pdf
