@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js](https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js)"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js](https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js)"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js](https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js)"></script>
+</head>
+<body>
+    <video class="input_video" style="display:none"></video>
+    <canvas class="output_canvas" width="640" height="480"></canvas>
+
+    <script>
+        const videoElement = document.getElementsByClassName('input_video')[0];
+        const canvasElement = document.getElementsByClassName('output_canvas')[0];
+        const canvasCtx = canvasElement.getContext('2d');
+        const accesorioImg = new Image();
+        accesorioImg.src = "[https://cdn-icons-png.flaticon.com/512/119/119596.png](https://cdn-icons-png.flaticon.com/512/119/119596.png)";
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+            if (results.multiFaceLandmarks) {
+                for (const landmarks of results.multiFaceLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#C0C0C070', lineWidth: 1});
+                    const nariz = landmarks[1];
+                    const x = nariz.x * canvasElement.width;
+                    const y = nariz.y * canvasElement.height;
+                    canvasCtx.drawImage(accesorioImg, x - 20, y - 20, 40, 40);
+                }
+            }
+            canvasCtx.restore();
+        }
+
+        const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+        faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5 });
+        faceMesh.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await faceMesh.send({image: videoElement}); },
+            width: 640, height: 480
+        });
+        camera.start();
+    </script>
+</body>
+</html>
